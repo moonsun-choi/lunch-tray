@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lunch-tray-no-tailwind-cdn-v1';
+const CACHE_NAME = 'lunch-tray-no-tailwind-cdn-v2-dessert-position';
 
 const REQUIRED_APP_SHELL = [
   './',

@@ -20,7 +20,7 @@
     <!-- 상단 버튼 -->
     <div class="w-full flex justify-end max-w-6xl mb-2 relative z-10">
         <button id="btn-toggle-mode" class="bg-white px-4 py-2 rounded-full shadow-md text-sm font-bold text-slate-600 hover:text-blue-600 border border-slate-200 transition-colors">
-            ⚙️ 교사 설정 모드
+            ⚙️ 선생님 설정 모드
         </button>
     </div>
 
@@ -109,12 +109,12 @@
         </div>
     </div>
 
-    <!-- ================= 교사 모드 (설정 화면) ================= -->
+    <!-- ================= 선생님 모드 (설정 화면) ================= -->
     <div id="teacher-view" class="max-w-6xl w-full mx-auto hidden">
         <div class="teacher-workbar sticky top-3 z-30 bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-4 mb-5">
             <div class="flex flex-col xl:flex-row xl:items-center gap-3">
                 <div class="flex-1 min-w-0">
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-wide">교사 설정 모드</p>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-wide">선생님 설정 모드</p>
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <button id="btn-admin-prev-date" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200">◀</button>
                         <input type="date" id="admin-toolbar-date-input" title="토요일과 일요일은 선택할 수 없습니다." class="px-3 py-2 rounded-xl border-2 border-slate-200 font-black text-blue-600 outline-none focus:border-blue-400 bg-white">
@@ -1256,7 +1256,7 @@
                 teacherView.classList.add('hidden');
                 studentView.classList.remove('hidden');
                 if (mainHeader) mainHeader.classList.remove('hidden');
-                btn.innerText = "⚙️ 교사 설정 모드";
+                btn.innerText = "⚙️ 선생님 설정 모드";
                 resetAndStartGame();
             }
         }

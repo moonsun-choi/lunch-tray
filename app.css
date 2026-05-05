@@ -1270,7 +1270,23 @@
             overflow-wrap: normal;
             hyphens: none;
         }
-        .tray-hole[data-id="orange"] .label-badge {
+        
+/* 학생 모드 식판의 후식 칸 위치를 Tailwind CDN 사용 시와 동일하게 고정합니다. */
+#meal-tray > .tray-hole[data-id="orange"] {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 9999px;
+  border-width: 4px;
+  border-color: var(--color-slate-300);
+  z-index: 6;
+  grid-column: auto;
+  grid-row: auto;
+}
+
+.tray-hole[data-id="orange"] .label-badge {
             font-size: clamp(0.68rem, 1.15vw, 0.86rem);
             line-height: 1.12;
             padding: 2px 6px;

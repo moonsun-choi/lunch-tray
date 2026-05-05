@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="오늘의 급식판을 사진 드래그로 완성하는 수업용 웹앱">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="급식판">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <title>오늘의 급식판 완성하기</title>
+    <link rel="stylesheet" href="./app.css">
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center py-6 px-4">
+
+    <!-- 상단 버튼 -->
+    <div class="w-full flex justify-end max-w-6xl mb-2 relative z-10">
+        <button id="btn-toggle-mode" class="bg-white px-4 py-2 rounded-full shadow-md text-sm font-bold text-slate-600 hover:text-blue-600 border border-slate-200 transition-colors">
+            ⚙️ 교사 설정 모드
+        </button>
+    </div>
+
+    <!-- 헤더 -->
+    <div id="main-header" class="max-w-4xl w-full text-center mb-6">
+        <h1 class="text-4xl font-black text-slate-800 mb-2">🍽️ 오늘의 급식판 완성하기</h1>
+        <p id="header-subtitle" class="text-slate-600 font-bold text-lg mb-2">보관함의 사진을 드래그해서 급식판을 채워주세요!</p>
+        
+        <!-- 날짜 이동 네비게이션 -->
+        <div class="inline-flex items-center justify-center bg-white px-2 py-1 rounded-full shadow-sm border border-slate-200">
+            <button id="btn-prev-date" class="p-1 px-3 text-slate-400 hover:text-blue-600 font-bold transition-colors rounded-full hover:bg-slate-50">◀</button>
+            <span id="display-date" class="text-blue-600 font-extrabold text-sm mx-2 cursor-pointer">📅 로딩중...</span>
+            <input type="date" id="admin-date-input" title="토요일과 일요일은 선택할 수 없습니다." class="hidden text-blue-600 font-extrabold text-sm bg-transparent outline-none cursor-pointer mx-2">
+            <button id="btn-next-date" class="p-1 px-3 text-slate-400 hover:text-blue-600 font-bold transition-colors rounded-full hover:bg-slate-50">▶</button>
+        </div>
+    </div>
+
+
+    <!-- PWA 설치 안내 -->
+    <div id="install-card" class="install-card hidden max-w-4xl w-full mb-5 bg-white border border-blue-100 shadow-lg rounded-3xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+            <p id="install-title" class="font-black text-slate-800">📱 홈 화면에 추가하기</p>
+            <p id="install-description" class="text-sm text-slate-500 font-medium mt-1">
+                앱처럼 바로 실행할 수 있도록 홈 화면에 추가할 수 있어요.
+            </p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+            <button id="btn-install-app" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-black shadow-md hover:bg-blue-700 transition-colors">
+                추가하기
+            </button>
+            <button id="btn-close-install" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-colors">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= 학생 모드 (게임 화면) ================= -->
+    <div id="student-view" class="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl transition-all duration-300">
+        
+        <!-- 왼쪽: 급식판 (드롭 존) -->
+        <div id="meal-tray" class="tray-bg tray-grid layout-four-sides p-10 w-full max-w-[800px] aspect-[4/3]">
+            
+            <div class="tray-hole tray-side-left rounded-3xl" data-id="snail">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+            
+            <div class="tray-hole tray-side-middle-left rounded-3xl" data-id="tofu">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+            
+            <div class="tray-hole tray-side-middle-right rounded-3xl" data-id="kimchi">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+            
+            <div class="tray-hole tray-side-extra rounded-3xl" data-id="side4">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+
+            <div class="tray-hole tray-rice rounded-[4rem]" data-id="rice">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+
+            <div class="tray-hole tray-soup rounded-[4rem]" data-id="soup">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+            
+            <div class="absolute right-4 top-4 w-20 h-20 tray-hole rounded-full border-4 border-slate-300" data-id="orange">
+                <span class="label-badge"></span>
+                <div class="drop-slot w-full h-full flex items-center justify-center"></div>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 사진 보관함 -->
+        <div class="flex flex-col gap-4 bg-white p-6 rounded-[2rem] shadow-2xl w-full lg:w-72 border-b-8 border-slate-200">
+            <h2 class="text-xl font-black text-slate-700 border-b-4 border-blue-100 pb-2 mb-2 text-center">🍱 보관함</h2>
+            <div id="drag-source" class="grid grid-cols-3 lg:grid-cols-2 gap-4 w-full">
+                <!-- 사진들이 생성됩니다 -->
+            </div>
+            <p class="text-xs text-slate-400 text-center mt-2 font-medium">사진을 꾹 눌러서 식판으로 옮겨요!</p>
+        </div>
+    </div>
+
+    <!-- ================= 교사 모드 (설정 화면) ================= -->
+    <div id="teacher-view" class="max-w-6xl w-full mx-auto hidden">
+        <div class="teacher-workbar sticky top-3 z-30 bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-4 mb-5">
+            <div class="flex flex-col xl:flex-row xl:items-center gap-3">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-wide">교사 설정 모드</p>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <button id="btn-admin-prev-date" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200">◀</button>
+                        <input type="date" id="admin-toolbar-date-input" title="토요일과 일요일은 선택할 수 없습니다." class="px-3 py-2 rounded-xl border-2 border-slate-200 font-black text-blue-600 outline-none focus:border-blue-400 bg-white">
+                        <button id="btn-admin-next-date" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-500 font-black hover:bg-slate-200">▶</button>
+                        <span id="admin-work-date" class="text-sm font-black text-slate-700 truncate"></span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button id="btn-import-neis" class="px-5 py-3 rounded-2xl bg-emerald-600 text-white font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-colors">
+                        🏫 NEIS 메뉴 불러오기
+                    </button>
+                    <button id="btn-save-settings" class="px-6 py-3 rounded-2xl font-black bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+                        저장하기
+                    </button>
+                </div>
+            </div>
+            <div id="admin-status" class="teacher-status hidden mt-3 p-3 rounded-2xl text-sm font-bold"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_23rem] gap-5 items-start">
+            <section class="bg-white rounded-3xl shadow-xl border border-slate-200 p-4 md:p-5">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800">메뉴 카드 편집</h2>
+                        <p class="text-sm text-slate-500 font-bold mt-1">메뉴명과 사진 URL을 고치고, ↕ 손잡이로 칸을 바꿉니다.</p>
+                    </div>
+                </div>
+                <div id="admin-menu-list" class="space-y-3">
+                    <!-- 자바스크립트로 폼 생성됨 -->
+                </div>
+            </section>
+
+            <aside class="teacher-preview-card lg:sticky lg:top-32 bg-white rounded-3xl shadow-xl border border-slate-200 p-4 md:p-5">
+                <div class="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800">식판 미리보기</h2>
+                        <p id="admin-preview-subtitle" class="text-sm text-slate-500 font-bold mt-1">학생 화면에 보일 구성을 확인하세요.</p>
+                    </div>
+                </div>
+                <div id="admin-tray-preview"></div>
+                <p class="text-xs text-slate-400 font-bold mt-4 leading-5">사진 URL이 없는 메뉴는 식판에 이름만 표시되고, 사진이 있는 메뉴만 보관함에 나타납니다.</p>
+            </aside>
+        </div>
+    </div>
+
+    <!-- 성공 팝업 -->
+    <div id="win-message" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-10 rounded-[3rem] text-center shadow-2xl max-w-sm w-full transform border-8 border-blue-50">
+            <div class="text-7xl mb-6 animate-bounce">🍚</div>
+            <h2 class="text-3xl font-black text-slate-800 mb-3">배식 완료!</h2>
+            <p id="win-date-text" class="text-slate-600 font-bold mb-8 leading-relaxed">영양 만점 급식이 완성되었습니다.<br>맛있게 드세요!</p>
+            <button id="btn-close-win" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl transition-all shadow-lg shadow-blue-200 text-xl">
+                다시 담기
+            </button>
+        </div>
+    </div>
+
+    <!-- 저장 완료 토스트 알림 -->
+    <div id="toast-message" class="fixed right-4 bottom-4 md:right-6 md:bottom-6 bg-slate-800 text-white px-5 py-3 rounded-2xl font-bold shadow-2xl transition-all duration-300 translate-y-20 opacity-0 z-50 pointer-events-none max-w-[min(24rem,calc(100vw-2rem))] text-sm leading-5">
+        클라우드에 저장되었습니다! ☁️
+    </div>
+
+    <script src="./env.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const EMPTY_IMAGE_SRC = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlMmU4ZjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==";
+        const SIMPLE_EMPTY_IMAGE_SRC = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlMmU4ZjAiLz48L3N2Zz4=";
+
+        // GitHub에 API 키가 올라가지 않도록 env.js에서 설정값을 읽습니다.
+        // env.example.js를 복사해 env.js를 만들고 실제 값을 입력하세요.
+        const APP_ENV = window.LUNCH_TRAY_ENV || {};
+        const NEIS_API_KEY = String(APP_ENV.NEIS_API_KEY || "");
+        const NEIS_OFFICE_CODE = String(APP_ENV.NEIS_OFFICE_CODE || "J10");
+        const NEIS_SCHOOL_CODE = String(APP_ENV.NEIS_SCHOOL_CODE || "7530659");
+        const NEIS_MEAL_CODE = String(APP_ENV.NEIS_MEAL_CODE || "2");
+
+        const SIDE_SLOT_IDS = ['snail', 'tofu', 'kimchi', 'side4'];
+        const LEGACY_FOUR_SIDE_SLOT_IDS = ['snail', 'tofu', 'side4', 'kimchi'];
+
+        function getEmptyMenu() {
+            return [
+                { id: 'rice', slotName: '밥', name: '', img: '' },
+                { id: 'soup', slotName: '국', name: '', img: '' },
+                { id: 'snail', slotName: '반찬 1', name: '', img: '' },
+                { id: 'tofu', slotName: '반찬 2', name: '', img: '' },
+                { id: 'kimchi', slotName: '반찬 3', name: '', img: '' },
+                { id: 'side4', slotName: '반찬 4', name: '', img: '' },
+                { id: 'orange', slotName: '후식', name: '', img: '' }
+            ];
+        }
+
+        function hasMenuContent(item) {
+            return Boolean(
+                String(item?.name || '').trim() ||
+                String(item?.img || '').trim() ||
+                String(item?.storagePath || '').trim()
+            );
+        }
+
+        function compactSideDishSlots(menuItems, sourceSideOrder = SIDE_SLOT_IDS) {
+            const byId = new Map(menuItems.map((item) => [item.id, item]));
+            const sideData = sourceSideOrder
+                .map((id) => byId.get(id))
+                .filter(hasMenuContent)
+                .map((item) => ({
+                    name: String(item.name || ''),
+                    img: String(item.img || ''),
+                    storagePath: String(item.storagePath || '')
+                }));
+
+            SIDE_SLOT_IDS.forEach((id) => {
+                const item = byId.get(id);
+                if (!item) return;
+                item.name = '';
+                item.img = '';
+                delete item.storagePath;
+            });
+
+            const targetSideIds = sideData.length >= 4 ? SIDE_SLOT_IDS : SIDE_SLOT_IDS.slice(0, 3);
+            targetSideIds.forEach((id, index) => {
+                const item = byId.get(id);
+                const data = sideData[index];
+                if (!item || !data) return;
+                item.name = data.name;
+                item.img = data.img;
+                if (data.storagePath) item.storagePath = data.storagePath;
+            });
+
+            return menuItems;
+        }
+
+        function normalizeMenuItems(menuItems) {
+            const baseMenu = getEmptyMenu();
+            if (!Array.isArray(menuItems)) return baseMenu;
+
+            const savedById = new Map(
+                menuItems
+                    .filter((item) => item && item.id)
+                    .map((item) => [item.id, item])
+            );
+            const legacyFourSideOrder =
+                savedById.get('side4')?.slotName === '반찬 3' &&
+                savedById.get('kimchi')?.slotName === '반찬 4';
+
+            const normalized = baseMenu.map((defaultItem) => {
+                const savedItem = savedById.get(defaultItem.id);
+                if (!savedItem) return { ...defaultItem };
+                return {
+                    ...defaultItem,
+                    name: String(savedItem.name || ''),
+                    img: String(savedItem.img || ''),
+                    storagePath: String(savedItem.storagePath || '')
+                };
+            });
+
+            return compactSideDishSlots(
+                normalized,
+                legacyFourSideOrder ? LEGACY_FOUR_SIDE_SLOT_IDS : SIDE_SLOT_IDS
+            );
+        }
+
+        function countSideDishes(menuItems = currentMenu) {
+            return SIDE_SLOT_IDS
+                .map((id) => menuItems.find((item) => item.id === id))
+                .filter((item) => String(item?.name || '').trim())
+                .length;
+        }
+
+        function useFourSideLayout(menuItems = currentMenu) {
+            return countSideDishes(menuItems) >= 4;
+        }
+
+        function applyTrayLayout() {
+            const tray = document.getElementById('meal-tray');
+            if (!tray) return;
+            const useFour = useFourSideLayout(currentMenu);
+            tray.classList.toggle('layout-four-sides', useFour);
+            tray.classList.toggle('layout-three-sides', !useFour);
+        }
+
+        function readAdminFormIntoCurrentMenu() {
+            currentMenu.forEach((item) => {
+                const nameInput = document.getElementById(`name-${item.id}`);
+                const imgInput = document.getElementById(`img-${item.id}`);
+                if (nameInput) item.name = nameInput.value.trim();
+                if (imgInput) {
+                    const previousImg = String(item.img || '');
+                    item.img = imgInput.value.trim();
+                    if (item.storagePath && previousImg && item.img !== previousImg) {
+                        delete item.storagePath;
+                    }
+                }
+            });
+        }
+
+        function getMenuContent(item) {
+            return {
+                name: String(item?.name || '').trim(),
+                img: String(item?.img || '').trim(),
+                storagePath: String(item?.storagePath || '').trim()
+            };
+        }
+
+        function setMenuContent(item, content) {
+            item.name = String(content?.name || '').trim();
+            item.img = String(content?.img || '').trim();
+            const storagePath = String(content?.storagePath || '').trim();
+            if (storagePath) item.storagePath = storagePath;
+            else delete item.storagePath;
+        }
+
+        function clearMenuContent(item) {
+            setMenuContent(item, { name: '', img: '', storagePath: '' });
+        }
+
+        function clearAdminDragStyles() {
+            document.querySelectorAll('.admin-menu-card').forEach((card) => {
+                card.classList.remove('admin-drag-source', 'admin-drag-over');
+            });
+        }
+
+        function moveAdminMenuCard(sourceId, targetId) {
+            if (!sourceId || !targetId || sourceId === targetId) return;
+            readAdminFormIntoCurrentMenu();
+
+            const sourceItem = currentMenu.find((item) => item.id === sourceId);
+            const targetItem = currentMenu.find((item) => item.id === targetId);
+            if (!sourceItem || !targetItem) return;
+
+            if (!hasMenuContent(sourceItem)) {
+                showAdminStatus('이동할 메뉴가 없습니다.', 'warning');
+                playSound('wrong');
+                return;
+            }
+
+            const sourceContent = getMenuContent(sourceItem);
+            const targetContent = getMenuContent(targetItem);
+            const targetHasContent = hasMenuContent(targetItem);
+            const movedName = sourceContent.name || sourceItem.slotName;
+
+            if (targetHasContent) {
+                setMenuContent(sourceItem, targetContent);
+                setMenuContent(targetItem, sourceContent);
+                showAdminStatus(`${sourceItem.slotName}과 ${targetItem.slotName}의 메뉴를 서로 바꿨습니다. 저장 버튼을 눌러 반영하세요.`, 'success');
+            } else {
+                setMenuContent(targetItem, sourceContent);
+                clearMenuContent(sourceItem);
+                showAdminStatus(`${movedName} 메뉴를 ${targetItem.slotName} 칸으로 옮겼습니다. 저장 버튼을 눌러 반영하세요.`, 'success');
+            }
+
+            currentMenu = compactSideDishSlots(currentMenu);
+            renderAdminList();
+            playSound('correct');
+        }
+
+        function startAdminCardPointerDrag(event, sourceId, row, handle) {
+            if (event.pointerType === 'mouse') return;
+            event.preventDefault();
+            adminPointerDrag = {
+                sourceId,
+                row,
+                handle,
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                offsetX: 0,
+                offsetY: 0,
+                clone: null,
+                hoverRow: null,
+                isDragging: false
+            };
+            try { handle.setPointerCapture(event.pointerId); } catch (error) {}
+        }
+
+        function moveAdminCardPointerDrag(event) {
+            if (!adminPointerDrag || event.pointerId !== adminPointerDrag.pointerId) return;
+            if (event.pointerType === 'mouse') return;
+
+            const dx = event.clientX - adminPointerDrag.startX;
+            const dy = event.clientY - adminPointerDrag.startY;
+            if (!adminPointerDrag.isDragging && Math.hypot(dx, dy) < 8) return;
+
+            event.preventDefault();
+
+            if (!adminPointerDrag.isDragging) {
+                const rect = adminPointerDrag.row.getBoundingClientRect();
+                const clone = adminPointerDrag.row.cloneNode(true);
+                clone.style.position = 'fixed';
+                clone.style.left = `${rect.left}px`;
+                clone.style.top = `${rect.top}px`;
+                clone.style.width = `${rect.width}px`;
+                clone.style.height = `${rect.height}px`;
+                clone.style.zIndex = '9999';
+                clone.style.pointerEvents = 'none';
+                clone.style.opacity = '0.92';
+                clone.style.boxShadow = '0 18px 40px rgba(15, 23, 42, 0.25)';
+                clone.style.transform = 'scale(0.98)';
+                clone.classList.add('admin-drag-over');
+                document.body.appendChild(clone);
+
+                adminPointerDrag.clone = clone;
+                adminPointerDrag.offsetX = event.clientX - rect.left;
+                adminPointerDrag.offsetY = event.clientY - rect.top;
+                adminPointerDrag.isDragging = true;
+                adminPointerDrag.row.classList.add('admin-drag-source');
+                playSound('pick');
+            }
+
+            adminPointerDrag.clone.style.left = `${event.clientX - adminPointerDrag.offsetX}px`;
+            adminPointerDrag.clone.style.top = `${event.clientY - adminPointerDrag.offsetY}px`;
+
+            const targetRow = document.elementFromPoint(event.clientX, event.clientY)?.closest('.admin-menu-card');
+            if (adminPointerDrag.hoverRow && adminPointerDrag.hoverRow !== targetRow) {
+                adminPointerDrag.hoverRow.classList.remove('admin-drag-over');
+                adminPointerDrag.hoverRow = null;
+            }
+            if (targetRow && targetRow.dataset.slotId !== adminPointerDrag.sourceId) {
+                targetRow.classList.add('admin-drag-over');
+                adminPointerDrag.hoverRow = targetRow;
+            }
+        }
+
+        function endAdminCardPointerDrag(event) {
+            if (!adminPointerDrag || event.pointerId !== adminPointerDrag.pointerId) return;
+            if (event.pointerType === 'mouse') return;
+
+            const dragState = adminPointerDrag;
+            adminPointerDrag = null;
+
+            try { dragState.handle.releasePointerCapture(event.pointerId); } catch (error) {}
+
+            let targetRow = dragState.hoverRow;
+            if (!targetRow) {
+                targetRow = document.elementFromPoint(event.clientX, event.clientY)?.closest('.admin-menu-card');
+            }
+
+            if (dragState.clone) dragState.clone.remove();
+            clearAdminDragStyles();
+
+            if (dragState.isDragging) {
+                event.preventDefault();
+                const targetId = targetRow?.dataset?.slotId;
+                if (targetId && targetId !== dragState.sourceId) {
+                    moveAdminMenuCard(dragState.sourceId, targetId);
+                }
+            }
+        }
+
+        function getLocalDateString(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function parseLocalDateString(dateStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDateString(dateStr) {
+            if (!dateStr) return "날짜 미지정";
+            const d = parseLocalDateString(dateStr);
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            return `📅 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]}요일)`;
+        }
+
+        function getBlockedDateReason(dateStr) {
+            if (!dateStr) return '';
+            const d = parseLocalDateString(dateStr);
+            if (Number.isNaN(d.getTime())) return '';
+
+            if (d.getDay() === 0) return '일요일';
+            if (d.getDay() === 6) return '토요일';
+            return '';
+        }
+
+        function isSelectableDate(dateStr) {
+            return !getBlockedDateReason(dateStr);
+        }
+
+        function findSelectableDateFrom(dateStr, direction = 1) {
+            const d = parseLocalDateString(dateStr);
+            const step = direction >= 0 ? 1 : -1;
+
+            for (let i = 0; i < 370; i++) {
+                const candidate = getLocalDateString(d);
+                if (isSelectableDate(candidate)) return candidate;
+                d.setDate(d.getDate() + step);
+            }
+
+            return dateStr;
+        }
+
+        function moveToDate(dateStr, { showBlockedMessage = true } = {}) {
+            const reason = getBlockedDateReason(dateStr);
+            if (reason) {
+                const message = `${formatDateString(dateStr).replace('📅 ', '')}은 선택할 수 없습니다.`;
+                if (isTeacherMode) {
+                    showAdminStatus(message, 'warning');
+                } else {
+                    showToast(message);
+                }
+                updateDateDisplays();
+                return false;
+            }
+
+            const isChangingDate = currentDate !== dateStr;
+            if (isChangingDate && isTeacherMode) {
+                clearAdminStatus();
+            }
+
+            currentDate = dateStr;
+            updateDateDisplays();
+            loadMenuForDate(currentDate);
+            return true;
+        }
+
+        function shuffleArray(array) {
+            const result = [...array];
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+            return result;
+        }
+
+        let currentMenu = getEmptyMenu();
+        let currentDate = findSelectableDateFrom(getLocalDateString(), 1);
+        let targetMatchCount = 7;
+        let isTeacherMode = false;
+        let currentSnapshotUnsubscribe = null;
+
+        let deferredInstallPrompt = null;
+        const INSTALL_DISMISSED_KEY = 'lunchTrayInstallDismissed';
+        let db = null;
+        let auth = null;
+        let activeTouchItem = null;
+        let touchClone = null;
+        let currentHoverHole = null;
+        let audioContext = null;
+        let isGameCompleted = false;
+        let adminDraggedSlotId = null;
+        let adminPointerDrag = null;
+
+        function getAudioContext() {
+            if (!audioContext) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return null;
+                audioContext = new AudioContextClass();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
+            return audioContext;
+        }
+
+        function playTone(frequency, startTime, duration, volume = 0.08, type = 'sine') {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+            gain.gain.setValueAtTime(0.0001, startTime);
+            gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration + 0.02);
+        }
+
+        function playSound(type) {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+            if (type === 'pick') {
+                playTone(520, now, 0.07, 0.04, 'triangle');
+            } else if (type === 'correct') {
+                playTone(660, now, 0.09, 0.06, 'sine');
+                playTone(880, now + 0.08, 0.11, 0.06, 'sine');
+            } else if (type === 'wrong') {
+                playTone(220, now, 0.10, 0.05, 'sawtooth');
+                playTone(165, now + 0.09, 0.12, 0.05, 'sawtooth');
+            } else if (type === 'return') {
+                playTone(440, now, 0.06, 0.04, 'triangle');
+                playTone(330, now + 0.06, 0.08, 0.035, 'triangle');
+            } else if (type === 'save') {
+                playTone(523.25, now, 0.08, 0.05, 'sine');
+                playTone(659.25, now + 0.08, 0.08, 0.05, 'sine');
+                playTone(783.99, now + 0.16, 0.12, 0.05, 'sine');
+            } else if (type === 'success') {
+                playTone(523.25, now, 0.10, 0.07, 'sine');
+                playTone(659.25, now + 0.10, 0.10, 0.07, 'sine');
+                playTone(783.99, now + 0.20, 0.12, 0.07, 'sine');
+                playTone(1046.5, now + 0.34, 0.28, 0.08, 'sine');
+            }
+        }
+
+        function playPlacementFeedback(item, hole) {
+            if (!item || !hole) return;
+            playSound(item.dataset.itemId === hole.dataset.id ? 'correct' : 'wrong');
+        }
+
+
+
+        function isRunningStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function isIOSDevice() {
+            return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+        }
+
+        function showInstallCard(mode) {
+            const card = document.getElementById('install-card');
+            const title = document.getElementById('install-title');
+            const description = document.getElementById('install-description');
+            const installButton = document.getElementById('btn-install-app');
+
+            if (!card || isRunningStandalone() || localStorage.getItem(INSTALL_DISMISSED_KEY) === 'true') return;
+
+            if (mode === 'android') {
+                title.textContent = '📱 홈 화면에 추가하기';
+                description.textContent = '주소창의 설치 버튼을 누르거나 아래 버튼으로 앱처럼 설치할 수 있어요.';
+                installButton.textContent = '추가하기';
+                installButton.classList.remove('hidden');
+            } else if (mode === 'ios') {
+                title.textContent = '📱 iPhone/iPad 홈 화면에 추가하기';
+                description.textContent = 'Safari에서 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택해 주세요.';
+                installButton.textContent = '방법 보기';
+                installButton.classList.remove('hidden');
+            } else {
+                title.textContent = '📱 홈 화면에 추가하기';
+                description.textContent = '브라우저 메뉴에서 “홈 화면에 추가” 또는 “앱 설치”를 선택해 주세요.';
+                installButton.classList.add('hidden');
+            }
+
+            card.classList.remove('hidden');
+        }
+
+        function hideInstallCard(remember = false) {
+            const card = document.getElementById('install-card');
+            if (card) card.classList.add('hidden');
+            if (remember) localStorage.setItem(INSTALL_DISMISSED_KEY, 'true');
+        }
+
+        async function handleInstallClick() {
+            playSound('pick');
+
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                try {
+                    await deferredInstallPrompt.userChoice;
+                } catch (error) {
+                    console.warn('설치 선택 처리 중 오류:', error);
+                }
+                deferredInstallPrompt = null;
+                hideInstallCard();
+                return;
+            }
+
+            if (isIOSDevice()) {
+                alert('Safari 하단 또는 상단의 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택해 주세요.');
+                return;
+            }
+
+            alert('브라우저 메뉴에서 “홈 화면에 추가” 또는 “앱 설치”를 선택해 주세요.');
+        }
+
+        function setupPWAInstall() {
+            if (isRunningStandalone()) {
+                hideInstallCard();
+                return;
+            }
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                // 브라우저 주소창의 기본 설치 버튼이 보일 수 있도록 preventDefault()를 호출하지 않습니다.
+                // 동시에 이벤트를 저장해 앱 안의 "추가하기" 버튼도 사용할 수 있게 합니다.
+                deferredInstallPrompt = event;
+                showInstallCard('android');
+            });
+
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                hideInstallCard(true);
+            });
+
+            if (isIOSDevice()) {
+                showInstallCard('ios');
+            }
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js', {
+                    scope: './',
+                    updateViaCache: 'none'
+                }).then((registration) => {
+                    registration.update().catch(() => {});
+                }).catch((error) => console.warn('서비스 워커 등록 실패:', error));
+            });
+        }
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : String(APP_ENV.APP_ID || 'default-app-id');
+        const firebaseConfig = APP_ENV.FIREBASE_CONFIG || {};
+
+        function hasFirebaseConfig(config) {
+            return Boolean(config && config.apiKey && config.projectId && config.appId);
+        }
+        
+        if (hasFirebaseConfig(firebaseConfig)) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } else {
+            console.warn('Firebase 설정이 비어 있습니다. env.js에 FIREBASE_CONFIG를 입력해 주세요.');
+        }
+
+        async function initFirebase() {
+            if (!auth) return;
+            try {
+                let signedIn = false;
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        signedIn = true;
+                    } catch (e) {
+                        console.warn("인증 토큰 에러, 익명 로그인 전환");
+                    }
+                }
+                if (!signedIn) await signInAnonymously(auth);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) loadMenuForDate(currentDate);
+                });
+            } catch (error) {
+                console.error("인증 에러:", error);
+            }
+        }
+
+        function loadMenuForDate(dateStr) {
+            if (currentSnapshotUnsubscribe) currentSnapshotUnsubscribe();
+            if (!auth || !auth.currentUser) return;
+
+            const menuRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_menus', dateStr);
+            
+            currentSnapshotUnsubscribe = onSnapshot(menuRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    currentMenu = normalizeMenuItems(snapshot.data().menuItems);
+                } else {
+                    currentMenu = getEmptyMenu();
+                }
+                
+                if (!isTeacherMode) {
+                    resetAndStartGame();
+                } else {
+                    renderAdminList();
+                }
+                updateDateDisplays();
+            }, (error) => {
+                console.error("Firestore 동기화 에러:", error);
+            });
+        }
+
+        function updateDateDisplays() {
+            const formatted = formatDateString(currentDate);
+            const displayDate = document.getElementById('display-date');
+            if (displayDate) displayDate.innerText = formatted;
+
+            const toolbarDate = document.getElementById('admin-work-date');
+            if (toolbarDate) toolbarDate.textContent = formatted.replace('📅 ', '');
+
+            const toolbarInput = document.getElementById('admin-toolbar-date-input');
+            if (toolbarInput) toolbarInput.value = currentDate;
+        }
+
+        function changeDate(offset) {
+            const d = parseLocalDateString(currentDate);
+            d.setDate(d.getDate() + offset);
+            const nextDate = findSelectableDateFrom(getLocalDateString(d), offset);
+            moveToDate(nextDate, { showBlockedMessage: false });
+        }
+
+        function toggleDateInput() {
+            document.getElementById('display-date').classList.add('hidden');
+            const dInput = document.getElementById('admin-date-input');
+            dInput.classList.remove('hidden');
+            dInput.value = currentDate;
+            dInput.focus();
+            if (dInput.showPicker) {
+                try { dInput.showPicker(); } catch (e) {}
+            }
+        }
+
+        function changeDateFromInput() {
+            const dInput = document.getElementById('admin-date-input');
+            const val = dInput.value;
+            if (val) {
+                moveToDate(val);
+            }
+            dInput.classList.add('hidden');
+            document.getElementById('display-date').classList.remove('hidden');
+            updateDateDisplays();
+        }
+
+        function changeDateFromToolbarInput() {
+            const val = document.getElementById('admin-toolbar-date-input')?.value;
+            if (!val) return;
+            moveToDate(val);
+        }
+
+        function clearAdminStatus() {
+            const box = document.getElementById('admin-status');
+            if (!box) return;
+            box.textContent = '';
+            box.classList.add('hidden');
+            box.classList.remove('border', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'bg-amber-50', 'text-amber-700', 'border-amber-200');
+        }
+
+        function showAdminStatus(message, type = 'info') {
+            const box = document.getElementById('admin-status');
+            if (!box) return;
+            box.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'bg-amber-50', 'text-amber-700', 'border-amber-200');
+            box.classList.add('border');
+            if (type === 'error') box.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+            else if (type === 'success') box.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+            else if (type === 'warning') box.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-200');
+            else box.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+            box.textContent = message;
+        }
+
+        function yyyymmdd(dateStr) {
+            // NEIS API의 MLSV_YMD는 20260513처럼 숫자 8자리 형식이 안전합니다.
+            // 화면 표시 문자열이 섞여 들어와도 숫자만 추출해 날짜 오류를 줄입니다.
+            return String(dateStr || '').replace(/\D/g, '').slice(0, 8);
+        }
+
+        function maskNeisUrlForLog(urlText) {
+            if (!NEIS_API_KEY.trim()) return urlText;
+            return urlText.replace(NEIS_API_KEY.trim(), 'API_KEY_HIDDEN');
+        }
+
+        function normalizeMenuName(name) {
+            return String(name || '')
+                .replace(/\([^)]*\)/g, '')
+                .replace(/[0-9.]/g, '')
+                .replace(/\s+/g, '')
+                .trim()
+                .toLowerCase();
+        }
+
+        function cleanNeisDishName(name) {
+            return String(name || '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/\([^)]*\)/g, '')
+                .replace(/[0-9.]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function shouldExcludeNeisDish(name) {
+            const normalized = normalizeMenuName(name);
+            // 메뉴명이 정확히 '우유'인 항목만 제거합니다.
+            // 예: 우유, 우유(2)는 제거하지만 딸기우유, 초코우유, 우유푸딩 등은 유지합니다.
+            return normalized === '우유';
+        }
+
+        function parseNeisDishes(raw) {
+            const allDishes = String(raw || '')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .split(/\n+/)
+                .map(cleanNeisDishName)
+                .filter(Boolean);
+
+            const excludedDishes = allDishes.filter(shouldExcludeNeisDish);
+            const dishes = allDishes.filter((dish) => !shouldExcludeNeisDish(dish));
+
+            return { dishes, excludedDishes };
+        }
+
+        function splitNeisDishes(raw) {
+            return parseNeisDishes(raw).dishes;
+        }
+
+        function buildMenuFromDishes(dishes) {
+            const menu = getEmptyMenu();
+            const used = new Set();
+            const findIndex = (patterns) => dishes.findIndex((dish, idx) => !used.has(idx) && patterns.some((pattern) => pattern.test(dish)));
+            const setItem = (id, dishIndex) => {
+                const item = menu.find((m) => m.id === id);
+                if (!item || dishIndex < 0) return;
+                item.name = dishes[dishIndex];
+                used.add(dishIndex);
+            };
+
+            setItem('rice', findIndex([/밥$/, /밥/, /라이스/, /덮밥/, /볶음밥/, /비빔밥/, /주먹밥/]));
+            setItem('soup', findIndex([/국$/, /탕$/, /찌개$/, /스프$/, /국\b/, /탕\b/, /찌개\b/, /전골/]));
+            setItem('orange', findIndex([/과일/, /귤/, /오렌지/, /사과/, /배\b/, /바나나/, /포도/, /딸기/, /요구르트/, /요거트/, /푸딩/, /젤리/, /주스/, /쥬스/, /아이스/, /케이크/, /쿠키/]));
+
+            const remainingDishIndexes = dishes
+                .map((dish, index) => ({ dish, index }))
+                .filter(({ index }) => !used.has(index))
+                .map(({ index }) => index);
+            const sideTargetIds = remainingDishIndexes.length >= 4 ? SIDE_SLOT_IDS : SIDE_SLOT_IDS.slice(0, 3);
+            sideTargetIds.forEach((id, orderIndex) => {
+                const dishIndex = remainingDishIndexes[orderIndex];
+                if (dishIndex !== undefined) setItem(id, dishIndex);
+            });
+
+            return compactSideDishSlots(menu);
+        }
+
+        async function findReusableImage(menuName) {
+            if (!db || !menuName.trim()) return null;
+            const key = normalizeMenuName(menuName);
+            if (!key) return null;
+            const imageRef = doc(db, 'artifacts', appId, 'public', 'data', 'menu_image_library', key);
+            const snapshot = await getDoc(imageRef);
+            if (!snapshot.exists()) return null;
+            const data = snapshot.data();
+            return data && data.img ? data : null;
+        }
+
+        async function saveReusableImage(menuName, img, storagePath = '', source = 'manual') {
+            if (!db || !menuName.trim() || !img.trim()) return;
+            const key = normalizeMenuName(menuName);
+            if (!key) return;
+            const imageRef = doc(db, 'artifacts', appId, 'public', 'data', 'menu_image_library', key);
+            await setDoc(imageRef, {
+                key,
+                name: menuName.trim(),
+                img: img.trim(),
+                storagePath,
+                source,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        }
+
+        async function fillReusableImagesForMenu(showMessage = true) {
+            let filled = 0;
+            for (const item of currentMenu) {
+                if (!item.name.trim() || item.img.trim()) continue;
+                const reusable = await findReusableImage(item.name);
+                if (reusable && reusable.img) {
+                    item.img = reusable.img;
+                    filled++;
+                }
+            }
+            renderAdminList();
+            if (showMessage) {
+                if (filled > 0) showAdminStatus(`저장된 사진 ${filled}개를 다시 연결했습니다.`, 'success');
+                else showAdminStatus('재사용할 수 있는 저장된 사진을 찾지 못했습니다.', 'warning');
+            }
+            return filled;
+        }
+
+        async function importNeisMealForCurrentDate() {
+            if (!NEIS_OFFICE_CODE.trim() || !NEIS_SCHOOL_CODE.trim()) {
+                showAdminStatus('코드 상단의 NEIS_OFFICE_CODE와 NEIS_SCHOOL_CODE를 먼저 입력해야 합니다.', 'warning');
+                return;
+            }
+
+            const mealDate = yyyymmdd(currentDate);
+            if (mealDate.length !== 8) {
+                showAdminStatus(`NEIS 날짜 형식이 올바르지 않습니다. 현재 값: ${currentDate}`, 'warning');
+                console.warn('NEIS 날짜 변환 실패:', { currentDate, mealDate });
+                return;
+            }
+
+            showAdminStatus('NEIS에서 급식 메뉴를 불러오는 중입니다...', 'info');
+            const params = new URLSearchParams({
+                Type: 'json',
+                pIndex: '1',
+                pSize: '10',
+                ATPT_OFCDC_SC_CODE: NEIS_OFFICE_CODE.trim(),
+                SD_SCHUL_CODE: NEIS_SCHOOL_CODE.trim(),
+                MMEAL_SC_CODE: NEIS_MEAL_CODE.trim(),
+                MLSV_YMD: mealDate
+            });
+            if (NEIS_API_KEY.trim()) params.set('KEY', NEIS_API_KEY.trim());
+
+            const requestUrl = `https://open.neis.go.kr/hub/mealServiceDietInfo?${params.toString()}`;
+            console.log('NEIS 선택 날짜:', currentDate);
+            console.log('NEIS 요청 날짜:', mealDate);
+            console.log('NEIS 요청 URL:', maskNeisUrlForLog(requestUrl));
+
+            try {
+                const response = await fetch(requestUrl);
+                console.log('NEIS HTTP 상태:', response.status, response.statusText);
+
+                if (!response.ok) throw new Error(`NEIS HTTP 오류: ${response.status} ${response.statusText}`);
+
+                const data = await response.json();
+                console.log('NEIS 원본 응답:', data);
+
+                if (data.RESULT) {
+                    showAdminStatus(data.RESULT.MESSAGE || '해당하는 데이터가 없습니다.', 'warning');
+                    return;
+                }
+
+                const rows = data.mealServiceDietInfo?.[1]?.row || [];
+                if (!rows.length) {
+                    showAdminStatus('해당하는 데이터가 없습니다.', 'warning');
+                    return;
+                }
+
+                const lunchRow = rows.find(row => String(row.MMEAL_SC_CODE || '') === NEIS_MEAL_CODE.trim()) || rows[0];
+                const rawDishNames = lunchRow.DDISH_NM || '';
+                const { dishes, excludedDishes } = parseNeisDishes(rawDishNames);
+                if (!dishes.length) {
+                    showAdminStatus('NEIS 응답에서 메뉴명을 읽지 못했습니다.', 'warning');
+                    console.warn('DDISH_NM 원본:', rawDishNames);
+                    console.warn('제거된 우유 항목:', excludedDishes);
+                    return;
+                }
+
+                currentMenu = buildMenuFromDishes(dishes);
+                const filled = await fillReusableImagesForMenu(false);
+                renderAdminList();
+                showAdminStatus(`NEIS 메뉴 ${dishes.length}개를 불러왔습니다. 저장된 사진 ${filled}개를 자동 연결했습니다.`, 'success');
+            } catch (error) {
+                console.error('NEIS 급식 불러오기 실패:', error);
+                showAdminStatus(`NEIS 급식 정보를 불러오지 못했습니다. ${error.message}`, 'error');
+            }
+        }
+
+        function showToast(message = '클라우드에 저장되었습니다! ☁️') {
+            playSound('save');
+            const toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function returnItemToSource(item) {
+            item.classList.remove('border-0', 'border-red-500', 'border-blue-500');
+            item.classList.add('border-4', 'border-slate-200');
+
+            let emptySlot = Array.from(document.querySelectorAll('.source-slot'))
+                .find(s => s.children.length === 0);
+
+            if (!emptySlot) {
+                emptySlot = document.createElement('div');
+                emptySlot.className = 'source-slot w-full aspect-square';
+                document.getElementById('drag-source').appendChild(emptySlot);
+            }
+
+            emptySlot.appendChild(item);
+        }
+
+        function updateTouchClonePosition(touch) {
+            if (!touchClone || !touch) return;
+            const offsetX = Number(touchClone.dataset.offsetX || 0);
+            const offsetY = Number(touchClone.dataset.offsetY || 0);
+            const x = touch.clientX - offsetX;
+            const y = touch.clientY - offsetY;
+            touchClone.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault(); 
+            playSound('pick');
+            activeTouchItem = e.currentTarget;
+            activeTouchItem.style.opacity = '0.5';
+
+            const touch = e.touches[0];
+            const rect = activeTouchItem.getBoundingClientRect();
+
+            touchClone = activeTouchItem.cloneNode(true);
+            touchClone.classList.add('touch-drag-clone');
+            touchClone.style.position = 'fixed';
+            touchClone.style.left = '0px';
+            touchClone.style.top = '0px';
+            touchClone.style.width = rect.width + 'px';
+            touchClone.style.height = rect.height + 'px';
+            touchClone.style.zIndex = '9999';
+            touchClone.style.pointerEvents = 'none'; 
+            touchClone.style.opacity = '0.92';
+            touchClone.style.transition = 'none';
+            touchClone.style.margin = '0';
+
+            touchClone.dataset.offsetX = touch.clientX - rect.left;
+            touchClone.dataset.offsetY = touch.clientY - rect.top;
+
+            updateTouchClonePosition(touch);
+            document.body.appendChild(touchClone);
+        }
+
+        function handleTouchMove(e) {
+            if (!activeTouchItem || !touchClone) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+
+            // left/top을 계속 바꾸면 모바일 브라우저에서 레이아웃 계산이 반복되어 느리게 느껴질 수 있습니다.
+            // transform은 GPU 합성으로 처리되므로 손가락을 훨씬 즉각적으로 따라옵니다.
+            updateTouchClonePosition(touch);
+
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+            const hole = targetElement ? targetElement.closest('.tray-hole') : null;
+
+            if (currentHoverHole && currentHoverHole !== hole) {
+                currentHoverHole.classList.remove('drag-over');
+                currentHoverHole = null;
+            }
+            if (hole && !hole.classList.contains('pointer-events-none')) {
+                hole.classList.add('drag-over');
+                currentHoverHole = hole;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!activeTouchItem || !touchClone) return;
+            activeTouchItem.style.opacity = '1';
+            touchClone.remove(); 
+            touchClone = null;
+
+            const touch = e.changedTouches[0];
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+            const hole = targetElement ? targetElement.closest('.tray-hole') : null;
+            const isSource = targetElement ? targetElement.closest('#drag-source') : null;
+
+            if (currentHoverHole) {
+                currentHoverHole.classList.remove('drag-over');
+                currentHoverHole = null;
+            }
+
+            if (hole && !hole.classList.contains('pointer-events-none')) {
+                const slot = hole.querySelector('.drop-slot');
+                if (slot.children.length > 0 && slot.children[0] !== activeTouchItem) returnItemToSource(slot.children[0]);
+                activeTouchItem.classList.remove('border-4', 'border-slate-200');
+                activeTouchItem.classList.add('border-0');
+                slot.appendChild(activeTouchItem);
+                playPlacementFeedback(activeTouchItem, hole);
+                checkWinCondition();
+            } else if (isSource) {
+                returnItemToSource(activeTouchItem);
+                playSound('return');
+                checkWinCondition();
+            }
+            activeTouchItem = null;
+        }
+
+        function checkWinCondition() {
+            let currentMatches = 0;
+            const holes = document.querySelectorAll('.tray-hole:not(.pointer-events-none)');
+            
+            holes.forEach(hole => {
+                const slot = hole.querySelector('.drop-slot');
+                if (slot.children.length > 0) {
+                    hole.classList.add('filled');
+                    const item = slot.children[0];
+                    if (item.dataset.itemId === hole.dataset.id) {
+                        currentMatches++;
+                        hole.classList.add('correct-match');
+                        hole.classList.remove('wrong-match');
+                    } else {
+                        hole.classList.add('wrong-match');
+                        hole.classList.remove('correct-match');
+                    }
+                } else {
+                    hole.classList.remove('filled', 'correct-match', 'wrong-match');
+                }
+            });
+
+            if (targetMatchCount > 0 && currentMatches === targetMatchCount && !isGameCompleted) {
+                isGameCompleted = true;
+                playSound('success');
+                setTimeout(() => { document.getElementById('win-message').classList.remove('hidden'); }, 500);
+            }
+        }
+
+        function setupTrayEvents() {
+            const holes = document.querySelectorAll('.tray-hole');
+            holes.forEach(hole => {
+                hole.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (!hole.classList.contains('pointer-events-none')) hole.classList.add('drag-over');
+                });
+                hole.addEventListener('dragleave', () => hole.classList.remove('drag-over'));
+                hole.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    hole.classList.remove('drag-over');
+                    if (hole.classList.contains('pointer-events-none')) return;
+                    const domId = e.dataTransfer.getData('dom-id');
+                    const draggedItem = document.getElementById(domId);
+                    if (!draggedItem) return;
+                    const slot = hole.querySelector('.drop-slot');
+                    if (slot.children.length > 0) returnItemToSource(slot.children[0]);
+                    draggedItem.classList.remove('border-4', 'border-slate-200');
+                    draggedItem.classList.add('border-0');
+                    slot.appendChild(draggedItem);
+                    playPlacementFeedback(draggedItem, hole);
+                    checkWinCondition();
+                });
+            });
+
+            const dragSource = document.getElementById('drag-source');
+            dragSource.addEventListener('dragover', (e) => e.preventDefault());
+            dragSource.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const domId = e.dataTransfer.getData('dom-id');
+                const draggedItem = document.getElementById(domId);
+                if (draggedItem) {
+                    returnItemToSource(draggedItem);
+                    playSound('return');
+                    checkWinCondition();
+                }
+            });
+        }
+
+        function toggleMode() {
+            isTeacherMode = !isTeacherMode;
+            const studentView = document.getElementById('student-view');
+            const teacherView = document.getElementById('teacher-view');
+            const btn = document.getElementById('btn-toggle-mode');
+            const mainHeader = document.getElementById('main-header');
+            if (isTeacherMode) {
+                studentView.classList.add('hidden');
+                if (mainHeader) mainHeader.classList.add('hidden');
+                teacherView.classList.remove('hidden');
+                btn.innerText = "🎮 학생 모드로 돌아가기";
+                clearAdminStatus();
+                renderAdminList();
+            } else {
+                teacherView.classList.add('hidden');
+                studentView.classList.remove('hidden');
+                if (mainHeader) mainHeader.classList.remove('hidden');
+                btn.innerText = "⚙️ 교사 설정 모드";
+                resetAndStartGame();
+            }
+        }
+
+        function makeAdminPreviewHole(item, className, options = {}) {
+            const hole = document.createElement('div');
+            const hasName = Boolean(item?.name?.trim());
+            const hasImage = Boolean(item?.img?.trim());
+            hole.className = `admin-preview-hole ${className} ${options.rounded || 'rounded-2xl'} ${hasName ? '' : 'empty'} ${hasName && !hasImage ? 'name-only' : ''}`;
+
+            if (hasImage) {
+                const img = document.createElement('img');
+                img.src = item.img.trim();
+                img.alt = item.name || item.slotName;
+                img.addEventListener('error', () => {
+                    img.remove();
+                    hole.classList.add('name-only');
+                });
+                hole.appendChild(img);
+            }
+
+            const label = document.createElement('div');
+            label.className = 'admin-preview-label';
+            label.textContent = hasName ? item.name.trim() : item.slotName;
+            hole.appendChild(label);
+            return hole;
+        }
+
+        function renderAdminTrayPreview() {
+            const preview = document.getElementById('admin-tray-preview');
+            if (!preview) return;
+
+            const byId = new Map(currentMenu.map((item) => [item.id, item]));
+            const useFour = useFourSideLayout(currentMenu);
+            const sideCount = countSideDishes(currentMenu);
+            const namedCount = currentMenu.filter((item) => item.name.trim()).length;
+            const imageCount = currentMenu.filter((item) => item.name.trim() && item.img.trim()).length;
+
+            const subtitle = document.getElementById('admin-preview-subtitle');
+            if (subtitle) {
+                subtitle.textContent = `반찬 ${sideCount >= 4 ? '네 가지 · 4칸' : '세 가지 이하 · 3칸'} / 메뉴 ${namedCount}개 / 사진 ${imageCount}개`;
+            }
+
+            preview.innerHTML = '';
+            const tray = document.createElement('div');
+            tray.className = 'admin-preview-tray p-5 aspect-[4/3] w-full';
+
+            const grid = document.createElement('div');
+            grid.className = `admin-preview-grid ${useFour ? 'layout-four-sides' : 'layout-three-sides'}`;
+
+            grid.appendChild(makeAdminPreviewHole(byId.get('snail'), 'preview-side-left', { rounded: 'rounded-2xl' }));
+            grid.appendChild(makeAdminPreviewHole(byId.get('tofu'), 'preview-side-middle-left', { rounded: 'rounded-2xl' }));
+            grid.appendChild(makeAdminPreviewHole(byId.get('kimchi'), 'preview-side-middle-right', { rounded: 'rounded-2xl' }));
+            grid.appendChild(makeAdminPreviewHole(byId.get('side4'), 'preview-side-extra', { rounded: 'rounded-2xl' }));
+            grid.appendChild(makeAdminPreviewHole(byId.get('rice'), 'preview-rice', { rounded: 'rounded-[2rem]' }));
+            grid.appendChild(makeAdminPreviewHole(byId.get('soup'), 'preview-soup', { rounded: 'rounded-[2rem]' }));
+
+            tray.appendChild(grid);
+            tray.appendChild(makeAdminPreviewHole(byId.get('orange'), 'admin-preview-dessert', { rounded: 'rounded-full' }));
+            preview.appendChild(tray);
+        }
+
+        function updateAdminPreviewFromForm() {
+            readAdminFormIntoCurrentMenu();
+            renderAdminTrayPreview();
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById('admin-menu-list');
+            list.innerHTML = '';
+
+            currentMenu.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'admin-menu-card grid grid-cols-[4.7rem_minmax(0,1fr)_2.8rem] md:grid-cols-[5.25rem_minmax(0,1fr)_3rem] items-stretch gap-3 p-3 border-2 border-slate-100 rounded-2xl bg-slate-50 hover:border-blue-200 transition-colors';
+                row.dataset.slotId = item.id;
+
+                row.addEventListener('dragover', (event) => {
+                    if (!adminDraggedSlotId || adminDraggedSlotId === item.id) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    row.classList.add('admin-drag-over');
+                });
+                row.addEventListener('dragleave', (event) => {
+                    if (!event.relatedTarget || !row.contains(event.relatedTarget)) {
+                        row.classList.remove('admin-drag-over');
+                    }
+                });
+                row.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    const sourceId = event.dataTransfer.getData('slot-id') || adminDraggedSlotId;
+                    clearAdminDragStyles();
+                    adminDraggedSlotId = null;
+                    moveAdminMenuCard(sourceId, item.id);
+                });
+
+                const previewColumn = document.createElement('div');
+                previewColumn.className = 'flex flex-col items-center justify-center gap-1.5 min-w-0';
+
+                const previewBox = document.createElement('div');
+                previewBox.className = 'w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden shrink-0 bg-slate-200 border shadow-inner';
+
+                const previewImg = document.createElement('img');
+                previewImg.id = `preview-${item.id}`;
+                previewImg.className = 'w-full h-full object-cover';
+                previewImg.src = item.img || EMPTY_IMAGE_SRC;
+                previewImg.alt = `${item.slotName} 미리보기`;
+                previewImg.addEventListener('error', () => {
+                    previewImg.src = EMPTY_IMAGE_SRC;
+                });
+                previewBox.appendChild(previewImg);
+
+                const slotBadge = document.createElement('div');
+                slotBadge.className = 'w-full text-center font-black text-slate-600 text-xs bg-white border border-slate-200 px-2 py-1 rounded-full shadow-sm';
+                slotBadge.textContent = item.slotName;
+
+                previewColumn.append(previewBox, slotBadge);
+
+                const inputArea = document.createElement('div');
+                inputArea.className = 'flex flex-col justify-center gap-2 min-w-0';
+
+                const nameRow = document.createElement('div');
+                nameRow.className = 'grid grid-cols-1 md:grid-cols-[3.8rem_minmax(0,1fr)] items-center gap-1.5';
+
+                const nameLabel = document.createElement('label');
+                nameLabel.className = 'font-extrabold text-slate-500 text-xs md:text-sm';
+                nameLabel.textContent = '메뉴명';
+                nameLabel.setAttribute('for', `name-${item.id}`);
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.id = `name-${item.id}`;
+                nameInput.value = item.name || '';
+                nameInput.className = 'w-full min-w-0 border-2 border-slate-200 px-3 py-2 rounded-xl outline-none font-bold text-slate-800 bg-white focus:border-blue-400';
+                nameInput.placeholder = '메뉴명';
+                nameInput.addEventListener('input', updateAdminPreviewFromForm);
+
+                nameRow.append(nameLabel, nameInput);
+
+                const urlRow = document.createElement('div');
+                urlRow.className = 'grid grid-cols-1 md:grid-cols-[3.8rem_minmax(0,1fr)] items-center gap-1.5';
+
+                const urlLabel = document.createElement('label');
+                urlLabel.className = 'font-extrabold text-slate-500 text-xs md:text-sm';
+                urlLabel.textContent = '사진 URL';
+                urlLabel.setAttribute('for', `img-${item.id}`);
+
+                const imgInput = document.createElement('input');
+                imgInput.type = 'text';
+                imgInput.id = `img-${item.id}`;
+                imgInput.value = item.img || '';
+                imgInput.className = 'w-full min-w-0 border-2 border-slate-200 px-3 py-2 rounded-xl outline-none text-xs text-slate-600 font-mono bg-white focus:border-blue-400';
+                imgInput.placeholder = '이미지 주소를 붙여넣으세요.';
+                imgInput.addEventListener('input', () => {
+                    previewImg.src = imgInput.value.trim() || EMPTY_IMAGE_SRC;
+                    updateAdminPreviewFromForm();
+                });
+
+                urlRow.append(urlLabel, imgInput);
+inputArea.append(nameRow, urlRow);
+
+                const moveHandle = document.createElement('button');
+                moveHandle.type = 'button';
+                moveHandle.className = 'admin-move-handle w-full min-h-full rounded-2xl bg-white border-2 border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors flex flex-col items-center justify-center gap-1 shadow-sm';
+                moveHandle.title = '이 손잡이를 끌어서 다른 칸으로 옮기세요.';
+                moveHandle.setAttribute('aria-label', `${item.slotName} 카드 이동`);
+                moveHandle.draggable = true;
+
+                const moveIcon = document.createElement('span');
+                moveIcon.className = 'text-2xl font-black leading-none';
+                moveIcon.textContent = '↕';
+                const moveText = document.createElement('span');
+                moveText.className = 'text-[10px] font-black text-current [writing-mode:vertical-rl]';
+                moveText.textContent = '이동';
+                moveHandle.append(moveIcon, moveText);
+
+                moveHandle.addEventListener('dragstart', (event) => {
+                    adminDraggedSlotId = item.id;
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('slot-id', item.id);
+                    row.classList.add('admin-drag-source');
+                    playSound('pick');
+                });
+                moveHandle.addEventListener('dragend', () => {
+                    adminDraggedSlotId = null;
+                    clearAdminDragStyles();
+                });
+                moveHandle.addEventListener('pointerdown', (event) => startAdminCardPointerDrag(event, item.id, row, moveHandle));
+                moveHandle.addEventListener('pointermove', moveAdminCardPointerDrag);
+                moveHandle.addEventListener('pointerup', endAdminCardPointerDrag);
+                moveHandle.addEventListener('pointercancel', endAdminCardPointerDrag);
+
+                row.append(previewColumn, inputArea, moveHandle);
+                list.appendChild(row);
+            });
+
+            updateDateDisplays();
+            renderAdminTrayPreview();
+        }
+
+        async function saveSettings() {
+            readAdminFormIntoCurrentMenu();
+            currentMenu = compactSideDishSlots(currentMenu);
+
+            if (db && auth && auth.currentUser) {
+                try {
+                    const menuRef = doc(db, 'artifacts', appId, 'public', 'data', 'daily_menus', currentDate);
+                    await setDoc(menuRef, { menuItems: currentMenu, date: currentDate });
+                    await Promise.all(currentMenu
+                        .filter(item => item.name.trim() && item.img.trim())
+                        .map(item => saveReusableImage(item.name, item.img, item.storagePath || '', item.storagePath ? 'storage-upload' : 'manual-url'))
+                    );
+                    playSound('save');
+                    showAdminStatus('저장되었습니다.', 'success');
+                    renderAdminTrayPreview();
+                } catch (error) {
+                    console.error("저장 실패:", error);
+                    showAdminStatus('저장에 실패했습니다. Firestore 권한을 확인해 주세요.', 'error');
+                    return;
+                }
+            } else {
+                showAdminStatus('저장할 수 없습니다. env.js의 FIREBASE_CONFIG 설정과 Firebase 로그인을 확인해 주세요.', 'error');
+                return;
+            }
+        }
+
+        function fitTrayLabelText(label) {
+            if (!label || !label.textContent.trim()) return;
+
+            label.style.fontSize = '';
+            const hole = label.closest('.tray-hole');
+            if (!hole) return;
+
+            const isDessert = hole.dataset.id === 'orange';
+            const minFontSize = isDessert ? 10 : 12;
+            let fontSize = parseFloat(getComputedStyle(label).fontSize);
+            const maxWidth = Math.max(0, hole.clientWidth - (isDessert ? 8 : 16));
+            const maxHeight = Math.max(0, hole.clientHeight - (isDessert ? 8 : 16));
+
+            if (!fontSize || !maxWidth || !maxHeight) return;
+
+            for (let i = 0; i < 14; i++) {
+                const tooWide = label.scrollWidth > maxWidth || label.clientWidth > maxWidth;
+                const tooTall = label.scrollHeight > maxHeight || label.clientHeight > maxHeight;
+                if ((!tooWide && !tooTall) || fontSize <= minFontSize) break;
+                fontSize -= 1;
+                label.style.fontSize = `${fontSize}px`;
+            }
+        }
+
+        function fitTrayLabels() {
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.label-badge').forEach(fitTrayLabelText);
+            });
+        }
+
+        function resetAndStartGame() {
+            isGameCompleted = false;
+            currentMenu = compactSideDishSlots(currentMenu);
+            applyTrayLayout();
+            targetMatchCount = 0;
+            updateDateDisplays();
+            document.getElementById('win-date-text').innerHTML = `
+                <span class="word-keep">영양 만점</span>
+                <span class="word-keep">급식이 완성되었습니다.</span><br>
+                <span class="word-keep">맛있게 드세요!</span>
+            `;
+
+            currentMenu.forEach(item => {
+                const hole = document.querySelector(`.tray-hole[data-id="${item.id}"]`);
+                const label = hole.querySelector('.label-badge');
+                hole.classList.remove('filled', 'pointer-events-none', 'opacity-50', 'correct-match', 'wrong-match', 'name-only');
+                hole.querySelector('.drop-slot').innerHTML = '';
+
+                const hasName = Boolean(item.name.trim());
+                const hasImage = Boolean(item.img.trim());
+
+                if (!hasName) {
+                    label.innerText = '';
+                    hole.classList.add('pointer-events-none', 'opacity-50');
+                } else {
+                    label.innerText = item.name;
+
+                    if (hasImage) {
+                        targetMatchCount++;
+                    } else {
+                        // NEIS에서 메뉴명만 불러와 저장한 경우에도 식판에는 메뉴명을 보여줍니다.
+                        // 사진이 없는 메뉴는 드래그할 사진이 없으므로 성공 조건에서는 제외하고 드롭 대상도 막습니다.
+                        hole.classList.add('name-only', 'pointer-events-none');
+                    }
+                }
+            });
+            fitTrayLabels();
+            
+            const dragSource = document.getElementById('drag-source');
+            dragSource.innerHTML = '';
+            const namedItems = currentMenu.filter(item => item.name.trim());
+            const validItems = currentMenu.filter(item => item.name.trim() && item.img.trim());
+
+            if (namedItems.length === 0) {
+                document.getElementById('header-subtitle').innerText = '아직 이 날짜의 급식 메뉴가 등록되지 않았어요.';
+                return;
+            }
+
+            if (validItems.length === 0) {
+                document.getElementById('header-subtitle').innerText = '사진이 없어도 메뉴명은 식판에 표시됩니다. 사진 URL을 등록하면 드래그 활동을 할 수 있어요.';
+                return;
+            }
+
+            if (validItems.length < namedItems.length) {
+                document.getElementById('header-subtitle').innerText = '사진이 있는 메뉴만 보관함에서 드래그하고, 사진이 없는 메뉴는 이름만 확인해요!';
+            } else {
+                document.getElementById('header-subtitle').innerText = '보관함의 사진을 드래그해서 급식판을 채워주세요!';
+            }
+            const shuffled = shuffleArray(validItems);
+            
+            shuffled.forEach(item => {
+                const container = document.createElement('div');
+                container.className = 'source-slot w-full aspect-square';
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'drag-item bg-slate-50 p-1 rounded-xl shadow-md border-4 border-slate-200 w-full h-full flex items-center justify-center overflow-hidden';
+                itemDiv.draggable = true;
+                itemDiv.id = `drag-${item.id}`;
+                itemDiv.dataset.itemId = item.id;
+
+                const img = document.createElement('img');
+                img.src = item.img;
+                img.alt = item.name;
+                img.className = 'w-full h-full object-cover rounded-lg pointer-events-none';
+                img.addEventListener('error', () => {
+                    img.src = SIMPLE_EMPTY_IMAGE_SRC;
+                });
+
+                itemDiv.appendChild(img);
+                itemDiv.addEventListener('dragstart', (e) => {
+                    playSound('pick');
+                    e.dataTransfer.setData('dom-id', itemDiv.id);
+                    e.target.style.opacity = '0.5';
+                });
+                itemDiv.addEventListener('dragend', (e) => e.target.style.opacity = '1');
+                itemDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
+                itemDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
+                itemDiv.addEventListener('touchend', handleTouchEnd);
+
+                container.appendChild(itemDiv);
+                dragSource.appendChild(container);
+            });
+        }
+
+        function closeWinMessage() {
+            document.getElementById('win-message').classList.add('hidden');
+            resetAndStartGame();
+        }
+
+        function setupStaticEvents() {
+            document.getElementById('btn-toggle-mode').addEventListener('click', toggleMode);
+            document.getElementById('btn-prev-date').addEventListener('click', () => changeDate(-1));
+            document.getElementById('btn-next-date').addEventListener('click', () => changeDate(1));
+            document.getElementById('display-date').addEventListener('click', toggleDateInput);
+            document.getElementById('admin-date-input').addEventListener('change', changeDateFromInput);
+            document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+            document.getElementById('btn-import-neis').addEventListener('click', importNeisMealForCurrentDate);
+            document.getElementById('btn-admin-prev-date').addEventListener('click', () => changeDate(-1));
+            document.getElementById('btn-admin-next-date').addEventListener('click', () => changeDate(1));
+            document.getElementById('admin-toolbar-date-input').addEventListener('change', changeDateFromToolbarInput);
+            document.getElementById('btn-close-win').addEventListener('click', closeWinMessage);
+            document.getElementById('btn-install-app').addEventListener('click', handleInstallClick);
+            document.getElementById('btn-close-install').addEventListener('click', () => hideInstallCard(true));
+            window.addEventListener('resize', fitTrayLabels);
+        }
+
+        setupStaticEvents();
+        setupPWAInstall();
+        registerServiceWorker();
+        setupTrayEvents();
+        initFirebase();
+    </script>
+</body>
+</html>
